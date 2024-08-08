@@ -6,3 +6,48 @@ services:
     volumes:
       - ./clickhouse-server-config:/etc/clickhouse-server/
       - ./volumes/clickhouse/db:/var/lib/clickhouse
+  clickhouse-backup:
+    image: altinity/clickhouse-backup:2.5.26-fips
+    environment:
+      - WATCH_INTERVAL=1m
+      - FULL_INTERVAL=2m
+      - REMOTE_STORAGE=s3
+      - BACKUPS_TO_KEEP_REMOTE=3
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=9000
+      - CLICKHOUSE_PASSWORD=password
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=clickhouse-backup
+      - S3_ACCESS_KEY=root-service-account
+      - S3_SECRET_KEY=nJQH46SkMCXfVHqe12HKvZs+QmV+aHKmaUaZ8Dtr
+    volumes:
+      - ./volumes/clickhouse/db:/var/lib/clickhouse
+    command: create_remote
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-07-29T22-14-52Z
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: TVDkAFWNueUy6u
+    command: server -console-address ":9001" /data
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2024-07-26T13-08-44Z
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: TVDkAFWNueUy6u
+    labels:
+      - logging=promtail
+    depends_on:
+      - minio
+    entrypoint: ""
+    command: >
+      sh -c "
+        /usr/bin/mc config host add default http://minio:9000 root TVDkAFWNueUy6u;
+        /usr/bin/mc mb clickhouse-backup;
+        /usr/bin/mc policy download clickhouse-backup;
+        /usr/bin/mc admin user svcacct add default root --access-key "root-service-account"
+        --secret-key "root-service-account-secret";
+        exit 0;
+      "
