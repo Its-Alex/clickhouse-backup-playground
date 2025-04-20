@@ -108,6 +108,12 @@
             <quota>default</quota>
             <grants>
                 <query>GRANT BACKUP ON *.*</query>
+                <query>GRANT ALTER FREEZE PARTITION ON *.*</query>
+                <query>GRANT SELECT(macro, substitution) ON system.macros</query>
+                <query>GRANT SELECT(value, name) ON system.build_options</query>
+                <query>GRANT SELECT(path, name) ON system.disks</query>
+                <query>GRANT SELECT(bytes_on_disk, active, database, `table`) ON system.parts</query>
+                <query>GRANT SELECT(mutation_id, command, is_done, database, `table`) ON system.mutations</query>
                 <query>GRANT SELECT(column, type, active, database, `table`) ON system.parts_columns</query>
             </grants>
         </backup_user>
